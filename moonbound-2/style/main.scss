@@ -1,0 +1,16 @@
+@import './output.css';
+
+body {
+	font-family: sans-serif;
+	text-align: center;
+}
+
+// 自定义 SCSS 样式（可选）
+.custom-gradient {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+// 响应式工具类
+.responsive-text {
+  @apply text-lg md:text-xl lg:text-2xl;
+}

@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* @layer components {
+
+    input[type="text"],
+    input[type="datetime-local"],
+    textarea {
+        @apply bg-gray-700 text-gray-200 focus:outlone-white focus:border-white rounded-md
+    }
+
+    body {
+        @apply bg-gray-700
+    }
+} */
