@@ -1,9 +1,5 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, Stylesheet, Title};
-use leptos_router::{
-    components::{Route, Router, Routes},
-    StaticSegment, WildcardSegment,
-};
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -13,7 +9,10 @@ pub fn App() -> impl IntoView {
     let (count, set_count) = signal(0);
     let progress_max = 50;
 
-    let double_count = move || count.get() * 2;
+    let double_count = move || {
+        leptos::logging::log!("double_count 闭包被调用了");
+        count.get() * 2
+    };
 
     let injected_html = "<p>this is injected html</p>";
 
@@ -50,15 +49,17 @@ pub fn App() -> impl IntoView {
             <progress max=progress_max value=count />
             <button on:click = move |_| set_count.set(1)>"Reset"</button>
         </div>
-        <div class="mt">
-            <progress max=progress_max value=double_count/>
-            <span>{double_count}</span>
-        </div>
+        // <div class="mt">
+        //     <progress max=progress_max value=double_count/>
+        //     <span>{double_count}</span>
+        // </div>
 
         // html 注入
         <div class="mt">
             <div inner_html=injected_html/>
 
         </div>
+
+        <p>"double_count 值："{double_count}</p>
     }
 }
