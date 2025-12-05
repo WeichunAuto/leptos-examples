@@ -1,0 +1,21 @@
+body {
+	font-family: sans-serif;
+	text-align: center;
+}
+.top-nav {
+	width:100%;
+	padding: 20px 0px;
+	border: solid 1px green;
+}
+
+.contacts {
+	width: 100lvw;
+	height: 100svh;
+	border: solid 1px blue;
+	display: flex;
+}
+.select-user {
+	width: 300px;
+	height: 500px;
+	border: solid 1px red;
+}
