@@ -1,0 +1,15 @@
+body {
+	font-family: sans-serif;
+	text-align: center;
+}
+
+.grid-table {
+  display: grid;
+  grid-template-columns: 100px 150px 150px;
+  padding: 8px;
+}
+
+.grid-table > div {
+  border: 1px solid #ccc;
+  padding: 6px;
+}
