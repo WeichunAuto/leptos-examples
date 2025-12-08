@@ -15,7 +15,7 @@ pub fn App() -> impl IntoView {
         <DynamicForComponent intial_length=5/>
 
         <h1 class="mt">"ForEnumerate Component Example"</h1>
-        <DynamicForEnumerateComponent initial_length = 6 />
+        <DynamicForEnumerateComponent initial_length = 6 /> 
 
     }
 }

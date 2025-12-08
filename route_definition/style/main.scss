@@ -19,3 +19,9 @@ body {
 	height: 500px;
 	border: solid 1px red;
 }
+
+.grid-table {
+  display: grid;
+  grid-template-columns: 150px 100px 150px;
+  padding: 8px;
+}
