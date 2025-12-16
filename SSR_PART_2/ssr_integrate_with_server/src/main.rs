@@ -27,7 +27,7 @@ async fn main() {
         Duration::from_secs(10),
     );
 
-    // request path, latency and status tracing. 
+    // request path, latency and status tracing.
     use axum::extract::Request;
     use ssr_integrate_with_server::middleware::tracing_request::LatencyOnResponse;
     use tower_http::trace::TraceLayer;

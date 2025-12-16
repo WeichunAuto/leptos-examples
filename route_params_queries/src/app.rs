@@ -6,7 +6,6 @@ use leptos_router::hooks::use_query_map;
 use leptos_router::params::Params;
 use leptos_router::{
     components::{Outlet, ParentRoute, Route, Router, Routes, A},
-    hooks::use_params_map,
     path,
 };
 

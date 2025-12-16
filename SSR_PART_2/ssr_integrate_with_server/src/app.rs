@@ -1,10 +1,12 @@
 use leptos::prelude::*;
-use leptos::task::spawn_local;
-use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
+use leptos_meta::{provide_meta_context, MetaTags};
 use leptos_router::{
-    components::{Route, Router, Routes},
-    StaticSegment,
+    components::{ Route, Router, Routes},
+    path,
 };
+use leptos_router::hooks::use_params;
+use leptos_router::params::Params;
+
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -24,9 +26,21 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+#[derive(Params, PartialEq)]
+struct UserParams {
+    id: Option<String>,
+}
+
 #[server]
-pub async fn add_todo(title: String) -> Result<String, ServerFnError> {
-    Ok("111".to_string())
+pub async fn get_user(user_id: String) -> Result<String, ServerFnError> {
+    tracing::info!("fetch user： {}", user_id);
+
+    use tokio::time::sleep;
+    use std::time::Duration;
+
+    sleep(Duration::from_secs(2)).await;
+
+    Ok(format!("user_id = {}", user_id))
 }
 
 #[component]
@@ -35,42 +49,45 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        // injects a stylesheet into the document <head>
-        // id=leptos means cargo-leptos will hot-reload this stylesheet
-        <Stylesheet id="leptos" href="/pkg/ssr_integrate_with_server.css"/>
+        <h1>"Welcome to Leptos!"</h1>
 
-        // sets the document title
-        <Title text="Welcome to Leptos"/>
-
-        // content for this welcome page
         <Router>
             <main>
-                <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=HomePage/>
+                <Routes fallback=move || "Not found.">
+                    <Route path=path!("/") view=HomePage/>
                 </Routes>
             </main>
         </Router>
+
     }
 }
 
-/// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-    // Creates a reactive value to update the button
-    let count = RwSignal::new(0);
-    let on_click = move |_| *count.write() += 1;
-    // leptos::loging::log!("clicked");
+    let params = use_params::<UserParams>();
+
+    let user_id = move || {
+        params
+            .read()
+            .as_ref()
+            .ok()
+            .and_then(|params| params.id.clone())
+            .unwrap_or_default()
+    };
+
+    let action = Action::new(move |input: &String| {
+        let input = input.to_owned();
+        async move { get_user(input).await }
+
+    });
+    
+    let input_params = "前端参数";
 
     view! {
-        <h1>"Welcome to Leptos!"</h1>
-        <button on:click=on_click>"Click Me: " {count}</button>
-
-        <button on:click=move |_| {
-            spawn_local(async {
-                let _ = add_todo("So much to do!".to_string()).await;
-            });
-        }>
-            "Add Todo"
+        <button on:click= move |_| {action.dispatch(input_params.to_string());}>
+            {move || if action.pending().get() { "Loading...".to_string() } else { "点击触发Action".to_string() }}
         </button>
+
+        <p>"params 值是："{move || user_id()}</p>
     }
 }
