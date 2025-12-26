@@ -1,7 +1,8 @@
 pub mod app;
 pub mod config;
-pub mod middleware;
 
+#[cfg(feature = "ssr")]
+pub mod middleware;
 pub use crate::config as my_config;
 
 #[cfg(feature = "hydrate")]

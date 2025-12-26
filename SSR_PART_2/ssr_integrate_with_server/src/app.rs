@@ -4,9 +4,14 @@ use leptos_router::{
     components::{ Route, Router, Routes},
     path,
 };
-use leptos_router::hooks::use_params;
-use leptos_router::params::Params;
+use serde::{Deserialize, Serialize};
 
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct UserInfo {
+    pub id: i32,
+    pub name: String,
+}
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -26,21 +31,16 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
-#[derive(Params, PartialEq)]
-struct UserParams {
-    id: Option<String>,
-}
-
 #[server]
-pub async fn get_user(user_id: String) -> Result<String, ServerFnError> {
-    tracing::info!("fetch user： {}", user_id);
+pub async fn get_user(user_info: UserInfo) -> Result<UserInfo, ServerFnError> {
+    tracing::info!("fetch user： {}", user_info.name);
 
     use tokio::time::sleep;
     use std::time::Duration;
 
     sleep(Duration::from_secs(2)).await;
 
-    Ok(format!("user_id = {}", user_id))
+    Ok(user_info)
 }
 
 #[component]
@@ -64,30 +64,29 @@ pub fn App() -> impl IntoView {
 
 #[component]
 fn HomePage() -> impl IntoView {
-    let params = use_params::<UserParams>();
 
-    let user_id = move || {
-        params
-            .read()
-            .as_ref()
-            .ok()
-            .and_then(|params| params.id.clone())
-            .unwrap_or_default()
-    };
-
-    let action = Action::new(move |input: &String| {
+    let action = Action::new(move |input: &UserInfo| {
         let input = input.to_owned();
         async move { get_user(input).await }
 
     });
     
-    let input_params = "前端参数";
+    let input_params = UserInfo{id: 0, name: String::from("Lucy John")};
 
     view! {
-        <button on:click= move |_| {action.dispatch(input_params.to_string());}>
-            {move || if action.pending().get() { "Loading...".to_string() } else { "点击触发Action".to_string() }}
+        <button on:click= move |_| {action.dispatch(input_params.clone());}>
+            {move || {
+                if action.pending().get() { 
+                    // 通过 action.input() 获取传进 action.dispatch 的参数值
+                    leptos::logging::log!("action input = {}", action.input().get().unwrap().name);
+                    "Loading...".to_string() 
+                } else if let Some(input) = action.value().get(){ // 通过 action.value() 获取 server fn get_user() 的返回数据
+                    input.unwrap().name
+                } else {
+                    "点击触发Action".to_string() 
+                }
+            }}
         </button>
 
-        <p>"params 值是："{move || user_id()}</p>
     }
 }
