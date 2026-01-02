@@ -1,7 +1,9 @@
+use ssr_update_store_test::state::app_state::AppState;
+
 
 #[cfg(feature = "ssr")]
 #[tokio::main]
-async fn main() {
+async fn main() -> anyhow::Result<()> {
     use axum::Router;
     use leptos::logging::log;
     use leptos::prelude::*;
@@ -14,11 +16,27 @@ async fn main() {
     // Generate the list of routes in your Leptos App
     let routes = generate_route_list(App);
 
+    // Initialize logging and tracing
+    use ssr_update_store_test::config::initialize;
+    initialize::init_logger();
+    tracing::info!("Starting the application server......");
+
+    // Initialize database connection
+    let db_connection = initialize::init_database().await?;
+
+    // Create application state with database connection
+    let app_state = AppState::new(db_connection);
+
     let app = Router::new()
-        .leptos_routes(&leptos_options, routes, {
-            let leptos_options = leptos_options.clone();
-            move || shell(leptos_options.clone())
-        })
+        .leptos_routes_with_context(
+            &leptos_options,
+            routes,
+            move || provide_context(app_state.clone()), // 将 AppState 放入到全局管理上下文中去
+            {
+                let leptos_options = leptos_options.clone();
+                move || shell(leptos_options.clone())
+            },
+        )
         .fallback(leptos_axum::file_and_error_handler(shell))
         .with_state(leptos_options);
 
@@ -29,6 +47,8 @@ async fn main() {
     axum::serve(listener, app.into_make_service())
         .await
         .unwrap();
+
+    Ok(())
 }
 
 #[cfg(not(feature = "ssr"))]

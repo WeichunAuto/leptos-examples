@@ -1,3 +1,4 @@
+use leptos::logging::log;
 use leptos::prelude::*;
 use reactive_stores::{Store, StoreFieldIterator};
 
@@ -51,40 +52,26 @@ pub fn UsersList() -> impl IntoView {
 
     // 更新
     let update_user_store = Callback::new(move |user_dto: UsersDto| {
-        leptos::logging::log!("start update users store. {:?}", user_dto);
+        let target_id = user_dto.id.unwrap();
 
         for row_signal in users_dto_store.rows().iter_unkeyed() {
-            // let fullname_signal = row_signal.fullname();
-            // let row_id = row_signal.id().get();
-            if row_signal.id().get().unwrap() == user_dto.id.unwrap() {
-                // *fullname_signal.write() = user_dto.fullname.clone();
-                // let rw = row_signal.write();
-                let mut row = row_signal.write();
-                row.fullname = user_dto.fullname.clone();
-                leptos::logging::log!("if inside: user_dto.id.unwrap() = {}", user_dto.id.unwrap());
+            let name_signal = row_signal.fullname();
+            let current_name = name_signal.get();
+
+            if row_signal.id().get().unwrap() == target_id {
+                name_signal.set(user_dto.fullname.clone());
+                log!("updated.");
+            } else {
+                name_signal.set(current_name);
             }
         }
-        // users_dto_store.update(|store| {
-        //     if let Some(row) = store
-        //         .rows
-        //         .iter_mut()
-        //         .find(|r| r.id.unwrap() == user_dto.id.unwrap())
-        //     {
-        //         row.fullname = user_dto.fullname.clone();
-        //         row.email = user_dto.email.clone();
-        //         row.ws_id = user_dto.ws_id;
-        //         leptos::logging::log!("updated!");
-        //     }
-        // });
     });
 
     view! {
         <Suspense
                 fallback = move || {view! {<p>"Load...."</p>}}
             >
-            {
-                move || {
-                    view! {
+
                         <div>
                             <table>
                                 <thead>
@@ -102,24 +89,46 @@ pub fn UsersList() -> impl IntoView {
 
                                     <ForEnumerate
                                         each = move || users_dto_store.rows()
-                                        key = |row_signal| row_signal.read().id
+                                        key = |row_signal| row_signal.read().id.unwrap()
                                         children = move |_, row_signal| {
-                                            let users_dto = row_signal.read();
+
+                                            // 为点击事件克隆整个 row_signal
+                                            let row_clone = row_signal.clone();
+
                                             view! {
-                                                <tr on:click=move |_| set_selected_line.set(Some(UsersDto {id: users_dto.id, fullname: users_dto.fullname.clone(), email: users_dto.email.clone(), create_at: users_dto.create_at.clone(), ws_id: users_dto.ws_id }))>
-                                                    <th>{users_dto.id}</th>
-                                                    <th>{users_dto.fullname.clone()}</th>
-                                                    <th>{users_dto.email.clone()}</th>
-                                                    <th>{users_dto.create_at.clone()}</th>
-                                                    <th>{users_dto.ws_id}</th>
-                                                    <th>
-                                                        <button on:click= move |ev| {
-                                                                ev.stop_propagation();
-                                                                delete_user_action.dispatch(row_signal.read().id.unwrap());
-                                                            }>
-                                                                "delete"
-                                                        </button>
-                                                    </th>
+                                                <tr on:click=move |_| {
+                                                    // 当前行对象
+                                                    let current_user = row_clone.read();
+
+                                                    set_selected_line.set(Some(UsersDto {
+                                                        id: current_user.id,
+                                                        fullname: current_user.fullname.clone(),
+                                                        email: current_user.email.clone(),
+                                                        create_at: current_user.create_at.clone(),
+                                                        ws_id: current_user.ws_id,
+                                                    }))
+                                                }>
+                                                    {
+                                                        move || {
+                                                            // 这里如果.read() 则需要.clone()
+                                                            // 如果.get() 则不需要.clone(), 因为.get()内部会自动克隆
+                                                            // let users = row_signal.read().clone();
+                                                            let users = row_signal.get();
+                                                            view! {
+                                                                <th>{move || users.id.unwrap_or_default()}</th>
+                                                                <th>{move || users.fullname.clone()}</th>
+                                                                <th>{move || users.email.clone()}</th>
+                                                                <th>{move || users.create_at.clone()}</th>
+                                                                <th>{move || users.ws_id}</th>
+                                                                <th>
+                                                                    <button on:click= move |ev| {
+                                                                        ev.stop_propagation();
+                                                                        delete_user_action.dispatch(users.id.unwrap_or_default());
+                                                                    }>"删除"</button>
+                                                                </th>
+                                                            }
+                                                        }
+                                                    }
                                                 </tr>
                                             }
                                         }
@@ -127,9 +136,6 @@ pub fn UsersList() -> impl IntoView {
                                 </tbody>
                             </table>
                         </div>
-                    }
-                }
-            }
         </Suspense>
 
 

@@ -36,7 +36,7 @@ impl UsersDto {
             ws_id,
         }
     }
-}   
+}
 
 impl Default for UsersDto {
     fn default() -> Self {
