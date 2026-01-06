@@ -1,4 +1,6 @@
 use crate::dto::users_dto::UsersDto;
+use leptos::prelude::RwSignal;
+use crate::dto::users_dto_sig::UsersDtoSig;
 
 #[cfg(feature = "ssr")]
 use crate::entity::prelude::*;
@@ -15,6 +17,52 @@ use sea_orm::{prelude::*, Condition, QueryOrder, Set};
 
 #[cfg(feature = "ssr")]
 use crate::state::app_state::AppState;
+
+#[server]
+pub async fn get_users_sig() -> Result<Vec<UsersDtoSig>, ServerFnError> {
+    #[cfg(feature = "ssr")]
+    {
+        
+        let state = expect_context::<AppState>();
+        let db = state.db();
+
+        let conditions = Condition::all();
+        let users = Users::find()
+            .filter(conditions)
+            .order_by_desc(users::Column::CreateAt)
+            .all(db)
+            .await
+            .unwrap();
+        // tracing::info!("query users results: {:?}", users);
+        // ApiResponse::success("success", Some(users))
+
+        let users_dto_sig: Vec<_> = users
+            .into_iter()
+            .map(|user| UsersDtoSig {
+                // key: user.id.to_string(),
+                id: Some(user.id),
+                fullname: RwSignal::new(user.fullname),
+                email: RwSignal::new(user.email),
+                create_at: Some(
+                    user.create_at
+                        .unwrap()
+                        .to_string()
+                        .chars()
+                        .take(16)
+                        .collect(),
+                ),
+                ws_id: RwSignal::new(user.ws_id),
+            })
+            .collect();
+
+        // tracing::info!("query users_dto results: {:?}", users_dto);
+        Ok(users_dto_sig)
+    }
+
+    #[cfg(not(feature = "ssr"))]
+    unreachable!("get_users should only run on the server");
+}
+
 
 #[server]
 pub async fn get_users() -> Result<Vec<UsersDto>, ServerFnError> {

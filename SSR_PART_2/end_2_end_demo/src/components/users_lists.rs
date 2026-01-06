@@ -52,7 +52,9 @@ pub fn UsersList() -> impl IntoView {
 
     // 更新
     let update_user_store = Callback::new(move |user_dto: UsersDto| {
+        log!("start updating....");
         let target_id = user_dto.id.unwrap();
+        log!("target id is : {}", target_id);
 
         for row_signal in users_dto_store.rows().iter_unkeyed() {
             let name_signal = row_signal.fullname();
@@ -61,6 +63,7 @@ pub fn UsersList() -> impl IntoView {
             if row_signal.id().get().unwrap() == target_id {
                 name_signal.set(user_dto.fullname.clone());
                 log!("updated.");
+                // break;
             } else {
                 name_signal.set(current_name);
             }
@@ -99,6 +102,8 @@ pub fn UsersList() -> impl IntoView {
                                                 <tr on:click=move |_| {
                                                     // 当前行对象
                                                     let current_user = row_clone.read();
+
+                                                    log!("current user id: {}, current user name: {:?}", current_user.id.unwrap(), current_user.fullname);
 
                                                     set_selected_line.set(Some(UsersDto {
                                                         id: current_user.id,

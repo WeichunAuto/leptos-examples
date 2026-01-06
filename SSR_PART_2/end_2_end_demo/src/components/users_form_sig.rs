@@ -1,9 +1,9 @@
 use leptos::{ev::SubmitEvent, logging::log, prelude::*};
 
-use crate::{dto::users_dto::UsersDto, server_fn::user::AddOrUpdateUsers};
+use crate::{dto::{users_dto::UsersDto, users_dto_sig::UsersDtoSig}, server_fn::user::AddOrUpdateUsers};
 
 #[component]
-pub fn UsersForm(users: UsersDto, callback: Callback<UsersDto>) -> impl IntoView {
+pub fn UsersFormSig(users: UsersDtoSig, callback: Callback<UsersDtoSig>) -> impl IntoView {
     let submit = ServerAction::<AddOrUpdateUsers>::new();
 
     let (pre_submit_version, set_pre_submit_version) = signal(0);
@@ -16,18 +16,18 @@ pub fn UsersForm(users: UsersDto, callback: Callback<UsersDto>) -> impl IntoView
     log!("users dto in form: {:?}", users);
 
     // 初始化 form 表单字段
-    Effect::watch(
-        move || users.id.unwrap_or_default(),
-        move |_, _, _| {
-            set_id.set(users.id.unwrap_or_default().to_string());
-            set_fullname.set(users.fullname.clone());
-            set_email.set(users.email.clone());
-            set_ws_id.set(users.ws_id.to_string());
+    // Effect::watch(
+    //     move || users.id.unwrap_or_default(),
+    //     move |_, _, _| {
+    //         set_id.set(users.id.unwrap_or_default().to_string());
+    //         set_fullname.set(users.fullname.clone());
+    //         set_email.set(users.email.clone());
+    //         set_ws_id.set(users.ws_id.to_string());
 
-            log!("form initialized.");
-        },
-        true,
-    );
+    //         log!("form initialized.");
+    //     },
+    //     true,
+    // );
 
     // form 提交成功后，将最新 user 回传，用于更新 store 和页面展示.
     Effect::new(move || {
@@ -40,13 +40,15 @@ pub fn UsersForm(users: UsersDto, callback: Callback<UsersDto>) -> impl IntoView
 
         if current_submit_version.get() > pre_submit_version.get() {
             set_pre_submit_version.set(current_submit_version.get());
-            let pass_back_user = UsersDto::new(
-                Some(id.get().parse::<i64>().unwrap()),
-                fullname.get(),
-                email.get(),
+            let pass_back_user = UsersDtoSig::new(
+                users.id,
+                users.fullname,
+                users.email,
                 None,
-                ws_id.get().parse::<i64>().unwrap(),
+                users.ws_id,
             );
+            // let pass_back_user = users.clone();
+
             callback.run(pass_back_user);
         }
     });
@@ -71,20 +73,20 @@ pub fn UsersForm(users: UsersDto, callback: Callback<UsersDto>) -> impl IntoView
         >
             <div class="form_div">
             <label>"ID: "
-                <input type="number" name="users_dto[id]" bind:value=(id, set_id)/>
+                <input type="number" name="users_dto[id]" value=users.id.unwrap_or_default()/>
             </label>
             </div>
             <div class="form_div">
                 <label>
                     "Full Name"
-                    <input type="text" name="users_dto[fullname]" bind:value=(fullname, set_fullname)/>
+                    <input type="text" name="users_dto[fullname]" bind:value=users.fullname/>
                 </label>
             </div>
 
             <div class="form_div">
                 <label>
                     "Email"
-                    <input type="text" name="users_dto[email]" bind:value=(email, set_email) />
+                    <input type="text" name="users_dto[email]" bind:value=users.email />
                 </label>
             </div>
 
@@ -93,9 +95,10 @@ pub fn UsersForm(users: UsersDto, callback: Callback<UsersDto>) -> impl IntoView
                     "分组ID"
                     <select name="users_dto[ws_id]"
                         on:change:target=move |ev| {
-                            set_ws_id.set(ev.target().value().parse().unwrap());
+                            // set_ws_id.set(ev.target().value().parse().unwrap());
+                            users.ws_id.set(ev.target().value().parse().unwrap());
                             }
-                            prop:value=move || ws_id.get().to_string()
+                            prop:value=move || users.ws_id
                     >
                         <option>
                             "0"

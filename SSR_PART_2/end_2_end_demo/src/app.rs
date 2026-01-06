@@ -5,9 +5,7 @@ use leptos_router::{
     path,
 };
 
-use crate::{
-    components::users_lists::UsersList
-};
+use crate::components::{users_lists::UsersList, users_lists_sig::UsersListSig};
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -59,7 +57,7 @@ fn HomePage() -> impl IntoView {
             <Suspense
                 fallback = move || {view! {<p>"Load...."</p>}}
             >
-                <UsersList />
+                <UsersListSig />
             </Suspense>
     }
 }
