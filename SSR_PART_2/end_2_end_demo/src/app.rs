@@ -5,7 +5,7 @@ use leptos_router::{
     path,
 };
 
-use crate::components::{users_lists::UsersList, users_lists_sig::UsersListSig};
+use crate::components::users_lists_sig::UsersListSig;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -51,7 +51,6 @@ pub fn App() -> impl IntoView {
 /// Renders the home page of your application.
 #[component]
 fn HomePage() -> impl IntoView {
-
     view! {
         <h1>"Welcome to Leptos!"</h1>
             <Suspense

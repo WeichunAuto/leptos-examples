@@ -1,33 +1,12 @@
-use leptos::{ev::SubmitEvent, logging::log, prelude::*};
+use leptos::{logging::log, prelude::*};
 
-use crate::{dto::{users_dto::UsersDto, users_dto_sig::UsersDtoSig}, server_fn::user::AddOrUpdateUsers};
+use crate::{dto::users_dto_sig::UsersDtoSig, server_fn::user::AddOrUpdateUsers};
 
 #[component]
 pub fn UsersFormSig(users: UsersDtoSig, callback: Callback<UsersDtoSig>) -> impl IntoView {
     let submit = ServerAction::<AddOrUpdateUsers>::new();
 
     let (pre_submit_version, set_pre_submit_version) = signal(0);
-
-    let (id, set_id) = signal(String::from("-1"));
-    let (fullname, set_fullname) = signal(String::from(""));
-    let (email, set_email) = signal(String::from(""));
-    let (ws_id, set_ws_id) = signal(String::from("-1"));
-
-    log!("users dto in form: {:?}", users);
-
-    // 初始化 form 表单字段
-    // Effect::watch(
-    //     move || users.id.unwrap_or_default(),
-    //     move |_, _, _| {
-    //         set_id.set(users.id.unwrap_or_default().to_string());
-    //         set_fullname.set(users.fullname.clone());
-    //         set_email.set(users.email.clone());
-    //         set_ws_id.set(users.ws_id.to_string());
-
-    //         log!("form initialized.");
-    //     },
-    //     true,
-    // );
 
     // form 提交成功后，将最新 user 回传，用于更新 store 和页面展示.
     Effect::new(move || {
@@ -40,31 +19,34 @@ pub fn UsersFormSig(users: UsersDtoSig, callback: Callback<UsersDtoSig>) -> impl
 
         if current_submit_version.get() > pre_submit_version.get() {
             set_pre_submit_version.set(current_submit_version.get());
-            let pass_back_user = UsersDtoSig::new(
-                users.id,
-                users.fullname,
-                users.email,
-                None,
-                users.ws_id,
-            );
-            // let pass_back_user = users.clone();
+            let submited_value = submit.value().get().unwrap().unwrap();
+            // let s = submited_value();
+
+            log!("submited_value = {:?}", submited_value);
+
+            // 创建时间如果为 None 则更新；如果为 Some 则新增
+            let created_time = match submited_value.create_at.is_some() {
+                true => submited_value.create_at,
+                false => None,
+            };
+
+            // 重要：不创建新信号，而是更新现有信号的值
+            let pass_back_user = UsersDtoSig {
+                id: submited_value.id,
+                fullname: users.fullname, // 使用传入的 existing signal
+                email: users.email,       // 使用传入的 existing signal
+                create_at: created_time,
+                ws_id: users.ws_id, // 使用传入的 existing signal
+            };
+
+            // 更新信号的值
+            users.fullname.set(submited_value.fullname);
+            users.email.set(submited_value.email);
+            users.ws_id.set(submited_value.ws_id);
 
             callback.run(pass_back_user);
         }
     });
-
-    // let on_submit = move |ev: SubmitEvent| {
-    //     let data = AddOrUpdateUsers::from_event(&ev).unwrap();
-    //     leptos::logging::log!("提交之前：{:?}", data);
-    //     set_updated_user_signal.set(UsersDto {
-    //         // key: data.id.unwrap().to_string(),
-    //         id: data.id,
-    //         fullname: data.fullname.clone(),
-    //         email: data.email.clone(),
-    //         create_at: None,
-    //         ws_id: data.ws_id,
-    //     });
-    // };
 
     view! {
         <ActionForm
@@ -73,13 +55,16 @@ pub fn UsersFormSig(users: UsersDtoSig, callback: Callback<UsersDtoSig>) -> impl
         >
             <div class="form_div">
             <label>"ID: "
-                <input type="number" name="users_dto[id]" value=users.id.unwrap_or_default()/>
+                <input type="number" name="users_dto[id]" readonly value=users.id/>
             </label>
             </div>
             <div class="form_div">
                 <label>
                     "Full Name"
-                    <input type="text" name="users_dto[fullname]" bind:value=users.fullname/>
+                    <input type="text" name="users_dto[fullname]"
+                    // bind:value=users.fullname
+                    prop:value = move || users.fullname.get()
+                    />
                 </label>
             </div>
 

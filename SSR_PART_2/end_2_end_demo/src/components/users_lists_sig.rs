@@ -1,13 +1,10 @@
 use leptos::logging::log;
 use leptos::prelude::*;
-use reactive_stores::{Store, StoreFieldIterator};
 
-use crate::components::users_form::UsersForm;
 use crate::components::users_form_sig::UsersFormSig;
-use crate::dto::users_dto::{UsersDto, UsersDtoDataStoreStoreFields, UsersDtoStoreFields};
 use crate::dto::users_dto_sig::UsersDtoSig;
+use crate::server_fn::user::delete_users;
 use crate::server_fn::user::get_users_sig;
-use crate::{dto::users_dto::UsersDtoDataStore, server_fn::user::delete_users};
 
 #[component]
 pub fn UsersListSig() -> impl IntoView {
@@ -39,7 +36,6 @@ pub fn UsersListSig() -> impl IntoView {
         },
         true,
     );
-    // let users_list = move || async_users.get();
 
     // 删除用户 by id
     let delete_user_action = Action::new(move |id: &i64| {
@@ -68,32 +64,53 @@ pub fn UsersListSig() -> impl IntoView {
         }
     });
 
-    // 更新
-    let update_user = Callback::new(move |user_dto: UsersDtoSig| {
-        log!("start updating....");
-        let target_id = user_dto.id.unwrap();
-        log!("target id is : {}", target_id);
+    // 更新 或 新增
+    let update_or_add_user = Callback::new(move |user_dto: UsersDtoSig| {
 
-        // for row_signal in users_dto_store.rows().iter_unkeyed() {
-        //     let name_signal = row_signal.fullname();
-        //     let current_name = name_signal.get();
+        // 新增
+        if let Some(created_time) = user_dto.create_at {
+            let new_user = UsersDtoSig::new(
+                user_dto.id,
+                user_dto.fullname,
+                user_dto.email,
+                Some(created_time.chars().take(16).collect()),
+                user_dto.ws_id,
+            );
 
-        //     if row_signal.id().get().unwrap() == target_id {
-        //         name_signal.set(user_dto.fullname.clone());
-        //         log!("updated.");
-        //         // break;
-        //     } else {
-        //         name_signal.set(current_name);
-        //     }
-        // }
+            log!("new_user = {:?}", new_user.fullname.get());
+            set_users_list.write().push(new_user);
+        }
+        // 更新
+        else {
+            log!("start updating.... :{}", user_dto.fullname.get());
+            let target_id = user_dto.id;
+
+            let update_user_opt = users_list
+                .get()
+                .into_iter()
+                .find(|user| user.id == user_dto.id);
+
+            if let Some(update_user) = update_user_opt {
+                update_user.fullname.set(user_dto.fullname.get());
+                log!("updated: {}, target id is : {}", user_dto.fullname.get(), target_id);
+            }
+        }
     });
 
     view! {
         <Suspense
-                fallback = move || {view! {<p>"Load...."</p>}}
-            >
+                fallback = move || {view! {
+                    <div>
 
+                        <p>"加载中..."</p>
+                    </div>
+                }}
+            >
                         <div>
+                            <div>
+                                <button on:click= move |_| set_selected_line.set(Some(UsersDtoSig::default()))>"添加"</button>
+                            </div>
+
                             <table>
                                 <thead>
                                     <tr>
@@ -115,9 +132,6 @@ pub fn UsersListSig() -> impl IntoView {
                                             let date = user.create_at.clone();
                                             view! {
                                                 <tr on:click=move |_| {
-
-                                                    // log!("current user id: {}, current user name: {:?}", current_user.id.unwrap(), current_user.fullname);
-
                                                     set_selected_line.set(Some(UsersDtoSig {
                                                         id: user.id,
                                                         fullname: user.fullname,
@@ -126,7 +140,7 @@ pub fn UsersListSig() -> impl IntoView {
                                                         ws_id: user.ws_id,
                                                     }))
                                                 }>
-                                                                <th>{move || user.id.unwrap_or_default()}</th>
+                                                                <th>{move || user.id}</th>
                                                                 <th>{move || user.fullname.get()}</th>
                                                                 <th>{move || user.email.get()}</th>
                                                                 <th>{move || user.create_at.clone().unwrap_or_default().clone()}</th>
@@ -134,7 +148,7 @@ pub fn UsersListSig() -> impl IntoView {
                                                                 <th>
                                                                     <button on:click= move |ev| {
                                                                         ev.stop_propagation();
-                                                                        delete_user_action.dispatch(user.id.unwrap_or_default());
+                                                                        delete_user_action.dispatch(user.id);
                                                                     }>"删除"</button>
                                                                 </th>
                                                 </tr>
@@ -151,18 +165,18 @@ pub fn UsersListSig() -> impl IntoView {
             when= move|| selected_line.get().is_some()
             fallback= move || {view! {<span></span>}}
         >
-        <div class="users-form">
-            <div class="close"
-                on:click=move |_| set_selected_line.set(None)
-            >"关闭"</div>
-            <div class="form">
-                <UsersFormSig
-                    users=selected_line.get().unwrap_or_default()
-                    callback = update_user
+            <div class="users-form">
+                <div class="close"
+                    on:click=move |_| set_selected_line.set(None)
+                >"关闭"</div>
+                <div class="form">
+                    <UsersFormSig
+                        users=selected_line.get().unwrap_or_default()
+                        callback = update_or_add_user
 
-                />
+                    />
+                </div>
             </div>
-        </div>
         </Show>
     }
 }
