@@ -46,12 +46,17 @@ pub fn UsersListSig() -> impl IntoView {
                 Ok(is_success) => {
                     if is_success {
                         leptos::logging::log!("delete is successful. now update the view");
-                        // let current_data = users.get().unwrap_or_default();
-                        // let filter_data: Vec<_> = current_data
-                        //     .into_iter()
-                        //     .filter(|user| user.id != id)
-                        //     .collect();
-                        // set_users.set(Some(filter_data));
+                        set_users_list.update(|list| {
+                            list.retain(|user| user.id != id);
+                        });
+
+                        let remain_users: Vec<_> = users_list
+                            .get()
+                            .into_iter()
+                            .filter(|user| user.id != id)
+                            .collect();
+                        set_users_list.set(remain_users);
+
                         leptos::logging::log!("view updated");
                     } else {
                         leptos::logging::log!("delete not successful.");
@@ -66,7 +71,6 @@ pub fn UsersListSig() -> impl IntoView {
 
     // 更新 或 新增
     let update_or_add_user = Callback::new(move |user_dto: UsersDtoSig| {
-
         // 新增
         if let Some(created_time) = user_dto.create_at {
             let new_user = UsersDtoSig::new(
@@ -79,6 +83,8 @@ pub fn UsersListSig() -> impl IntoView {
 
             log!("new_user = {:?}", new_user.fullname.get());
             set_users_list.write().push(new_user);
+
+            set_selected_line.set(None);
         }
         // 更新
         else {
@@ -92,7 +98,11 @@ pub fn UsersListSig() -> impl IntoView {
 
             if let Some(update_user) = update_user_opt {
                 update_user.fullname.set(user_dto.fullname.get());
-                log!("updated: {}, target id is : {}", user_dto.fullname.get(), target_id);
+                log!(
+                    "updated: {}, target id is : {}",
+                    user_dto.fullname.get(),
+                    target_id
+                );
             }
         }
     });
@@ -141,7 +151,7 @@ pub fn UsersListSig() -> impl IntoView {
                                                     }))
                                                 }>
                                                                 <th>{move || user.id}</th>
-                                                                <th>{move || user.fullname.get()}</th>
+                                                                <th>{move || user.fullname.get_untracked()}</th>
                                                                 <th>{move || user.email.get()}</th>
                                                                 <th>{move || user.create_at.clone().unwrap_or_default().clone()}</th>
                                                                 <th>{move || user.ws_id.get()}</th>
@@ -168,7 +178,9 @@ pub fn UsersListSig() -> impl IntoView {
             <div class="users-form">
                 <div class="close"
                     on:click=move |_| set_selected_line.set(None)
-                >"关闭"</div>
+                >
+                "关闭"
+                </div>
                 <div class="form">
                     <UsersFormSig
                         users=selected_line.get().unwrap_or_default()

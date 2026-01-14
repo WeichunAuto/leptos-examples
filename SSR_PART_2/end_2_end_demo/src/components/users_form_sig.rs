@@ -30,7 +30,7 @@ pub fn UsersFormSig(users: UsersDtoSig, callback: Callback<UsersDtoSig>) -> impl
                 false => None,
             };
 
-            // 重要：不创建新信号，而是更新现有信号的值
+            // 不创建新信号，而是更新现有信号的值
             let pass_back_user = UsersDtoSig {
                 id: submited_value.id,
                 fullname: users.fullname, // 使用传入的 existing signal
